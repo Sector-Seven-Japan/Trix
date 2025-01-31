@@ -297,6 +297,30 @@
 			{
 				"inputs": [
 					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "listedNFTs",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "nftContract",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "tokenId",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "address",
 						"name": "",
 						"type": "address"
@@ -373,7 +397,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"S7/marketplace.sol": "NFTMarketplaceWithERC20"
+			"S7/mp.sol": "NFTMarketplaceWithERC20"
 		},
 		"evmVersion": "cancun",
 		"libraries": {},
@@ -419,12 +443,12 @@
 				"dweb:/ipfs/QmfDRc7pxfaXB2Dh9np5Uf29Na3pQ7tafRS684wd3GLjVL"
 			]
 		},
-		"S7/marketplace.sol": {
-			"keccak256": "0xdf92f2b6e681f0ce591d5329283dec62df603f7d8847b5015d1e1bfb8a123c2d",
+		"S7/mp.sol": {
+			"keccak256": "0x07b2cf66f58de13dcde74b79df85a9f3faa8a74f08295e2c2ef032e2067b2819",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://db818f8e8b552ef4445a8ac1e127e90827351afb95955843fbaf8d0ac6d1f1e4",
-				"dweb:/ipfs/QmWdWRH8druTk1KNLgxVpJCytRa5cFGKtwimtWDEXKYMee"
+				"bzz-raw://aee325a001d070f03170f04d762fd55acf92b8ddd9c5308e805837bd2e92358d",
+				"dweb:/ipfs/QmSbtFGyAgZyoWrZdvRQLT44z51CjMWt1ibdfgyGsx8WS7"
 			]
 		}
 	},
