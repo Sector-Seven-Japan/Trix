@@ -8,6 +8,98 @@ app.use(express.json());
 const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_API_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 const usdtAddress = process.env.USDT_CONTRACT_ADDRESS;
+const gameCoinAddress = process.env.GAME_COIN_CONTRACT_ADDRESS;
+
+
+const gameCoinAbi = [
+    "function depositAndApproveUSDT(uint256 amount) external",
+    "function withdrawUSDT(address to, uint256 amount) external",
+    "function getContractUSDTBalance() external view returns (uint256)",
+    "function getAllowance(address user) external view returns (uint256)",
+    "function useGameCoin(uint256 amount) external",
+    "function gameCoinBalance(address) external view returns (uint256)",
+    "function owner() view returns (address)"
+];
+
+const gameCoinContract = new ethers.Contract(gameCoinAddress, gameCoinAbi, wallet);
+
+// **1. USDT のデポジット & 承認**
+app.post("/gamecoin/deposit", async (req, res) => {
+    try {
+        const { amount } = req.body;
+        const decimals = await gameCoinContract.decimals();
+        const tx = await gameCoinContract.depositAndApproveUSDT(ethers.utils.parseUnits(amount, decimals));
+        await tx.wait();
+        res.json({ txHash: tx.hash });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// **2. USDT の引き出し（オーナーのみ）**
+app.post("/gamecoin/withdraw", async (req, res) => {
+    try {
+        const { to, amount } = req.body;
+        const owner = await gameCoinContract.owner();
+        if (wallet.address.toLowerCase() !== owner.toLowerCase()) {
+            return res.status(403).json({ error: "Only the owner can withdraw" });
+        }
+
+        const decimals = await gameCoinContract.decimals();
+        const tx = await gameCoinContract.withdrawUSDT(to, ethers.utils.parseUnits(amount, decimals));
+        await tx.wait();
+        res.json({ txHash: tx.hash });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// **3. コントラクトの USDT 残高取得**
+app.get("/gamecoin/usdtbalance", async (req, res) => {
+    try {
+        const balance = await gameCoinContract.getContractUSDTBalance();
+        res.json({ balance: ethers.utils.formatUnits(balance, 18) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// **4. USDT 承認済み残高取得**
+app.get("/gamecoin/allowance/:user", async (req, res) => {
+    try {
+        const { user } = req.params;
+        const allowance = await gameCoinContract.getAllowance(user);
+        res.json({ allowance: ethers.utils.formatUnits(allowance, 18) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// **5. GameCoin の使用**
+app.post("/gamecoin/use", async (req, res) => {
+    try {
+        const { amount } = req.body;
+        const tx = await gameCoinContract.useGameCoin(ethers.utils.parseUnits(amount, 18));
+        await tx.wait();
+        res.json({ txHash: tx.hash });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// **6. GameCoin の残高取得**
+app.get("/gamecoin/balance/:user", async (req, res) => {
+    try {
+        const { user } = req.params;
+        const balance = await gameCoinContract.gameCoinBalance(user);
+        res.json({ balance: ethers.utils.formatUnits(balance, 18) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+
 const usdtAbi = [
     "function balanceOf(address) view returns (uint256)",
     "function transfer(address to, uint256 amount) returns (bool)",
