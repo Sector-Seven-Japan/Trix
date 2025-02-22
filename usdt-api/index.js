@@ -56,7 +56,8 @@ const bcmAbi = [
     "function ownerOf(uint256 tokenId) public view returns (address)",
     "function supportsInterface(bytes4 interfaceId) public view returns (bool)",
     "function symbol() public view returns (string memory)",
-    "function tokenURI(uint256 tokenId) public view returns (string memory)"
+    "function tokenURI(uint256 tokenId) public view returns (string memory)",
+    "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
 ];
 const bcmContract = new ethers.Contract(bcmAddress, bcmAbi, wallet);
 
@@ -71,7 +72,8 @@ app.get("/balance/:address", async (req, res) => {
         }
         const balance = await usdtContract.balanceOf(address);
         const decimals = await usdtContract.decimals();
-        res.json({ balance: ethers.utils.formatUnits(balance, decimals) });
+        const formattedBalance = ethers.utils.formatUnits(balance, decimals);
+        res.json({ balance: formattedBalance });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -180,10 +182,14 @@ app.get("/totalSupply", async (req, res) => {
 app.post("/gamecoin/deposit", async (req, res) => {
     try {
         const { amount } = req.body;
-        const decimals = await gameCoinContract.decimals();
-        const tx = await gameCoinContract.depositAndApproveUSDT(ethers.utils.parseUnits(amount, decimals));
-        await tx.wait();
-        res.json({ txHash: tx.hash });
+        const decimals = await usdtContract.decimals();
+        const parsedAmount = ethers.utils.parseUnits(amount, decimals);
+        const receipt = await sendTransaction(
+            gameCoinContract,
+            'depositAndApproveUSDT',
+            [parsedAmount]
+        );
+        res.json({ txHash: receipt.transactionHash });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -259,10 +265,36 @@ app.post("/bcm/mint", async (req, res) => {
         const { recipient, tokenURI, group } = req.body;
         const tx = await bcmContract.mintNFTWithGroup(recipient, tokenURI, group);
         const receipt = await tx.wait();
-        const tokenId = receipt.events[0].args[2].toString();
-        res.json({ message: "NFT Minted", tokenId, txHash: tx.hash });
+        
+        // Transferイベントを直接取得
+        const transferEvent = receipt.events.find(event => {
+            return event && event.event === 'Transfer';
+        });
+
+        if (!transferEvent || !transferEvent.args) {
+            throw new Error("Transfer event not found in transaction");
+        }
+
+        // tokenIdをイベントから取得
+        const tokenId = transferEvent.args.tokenId.toString();
+        
+        // グループ情報を取得して確認
+        const groupInfo = await bcmContract.getTokenGroup(tokenId);
+        
+        res.json({ 
+            message: "NFT Minted",
+            tokenId,
+            txHash: tx.hash,
+            recipient,
+            group,
+            confirmedGroup: groupInfo
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Mint error:", error);
+        res.status(500).json({ 
+            error: error.message,
+            details: "Failed to mint NFT"
+        });
     }
 });
 
@@ -355,8 +387,20 @@ app.get("/bcm/metadata", async (req, res) => {
     }
 });
 
+// トランザクション送信の共通関数を更新
+async function sendTransaction(contract, method, params) {
+    try {
+        const tx = await contract[method](...params);
+        const receipt = await tx.wait();
+        return receipt;
+    } catch (error) {
+        console.error(`Transaction error in ${method}:`, error);
+        throw error;
+    }
+}
+
 // **サーバー起動**
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
