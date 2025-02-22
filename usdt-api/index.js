@@ -204,7 +204,7 @@ app.post("/gamecoin/withdraw", async (req, res) => {
             return res.status(403).json({ error: "Only the owner can withdraw" });
         }
 
-        const decimals = await gameCoinContract.decimals();
+        const decimals = await usdtContract.decimals();
         const tx = await gameCoinContract.withdrawUSDT(to, ethers.utils.parseUnits(amount, decimals));
         await tx.wait();
         res.json({ txHash: tx.hash });
