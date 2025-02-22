@@ -9,6 +9,35 @@ cp .env.example .env
 npm start
 ```
 
+## Authentication
+
+すべてのAPIエンドポイントで、独自の秘密鍵を使用できます。
+秘密鍵はリクエストヘッダーに含めて送信します：
+
+```bash
+-H "x-private-key: YOUR_PRIVATE_KEY"
+```
+
+例：
+```bash
+# USDTの送金（独自の秘密鍵を使用）
+curl -X POST http://localhost:3000/transfer \
+     -H "Content-Type: application/json" \
+     -H "x-private-key: 557b5ef7d449367add5511d740a04ead66f0acd83caa57092c13a75fe8757951" \
+     -d '{"to": "0x40deA50302F41b7B695135b588B1ce2b5834Ccd3", "amount": "1.0"}'
+
+# NFTのミント（独自の秘密鍵を使用）
+curl -X POST http://localhost:3000/bcm/mint \
+     -H "Content-Type: application/json" \
+     -H "x-private-key: 557b5ef7d449367add5511d740a04ead66f0acd83caa57092c13a75fe8757951" \
+     -d '{"recipient": "0x04B236D5CC6fA765C0d209a3c8Faf1d368C6434e", "tokenURI": "https://example.com/metadata.json", "group": "1"}'
+```
+
+注意：
+- 秘密鍵を指定しない場合は、デフォルトの秘密鍵（.envファイルのPRIVATE_KEY）が使用されます
+- 秘密鍵は`0x`プレフィックスの有無どちらでも受け付けます
+- 本番環境では、HTTPSの使用を強く推奨します
+
 ## API Endpoints
 
 ### USDT Operations

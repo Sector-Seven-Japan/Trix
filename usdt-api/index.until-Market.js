@@ -6,6 +6,7 @@ const app = express();
 app.use(express.json());
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_API_URL);
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
 const usdtAddress = process.env.USDT_CONTRACT_ADDRESS;
 const gameCoinAddress = process.env.GAME_COIN_CONTRACT_ADDRESS;
@@ -25,6 +26,7 @@ const usdtAbi = [
     "function owner() view returns (address)",
     "function totalSupply() view returns (uint256)"
 ];
+const usdtContract = new ethers.Contract(usdtAddress, usdtAbi, wallet);
 
 // **GameCoin コントラクト ABI**
 const gameCoinAbi = [
@@ -36,6 +38,7 @@ const gameCoinAbi = [
     "function gameCoinBalance(address) external view returns (uint256)",
     "function owner() view returns (address)"
 ];
+const gameCoinContract = new ethers.Contract(gameCoinAddress, gameCoinAbi, wallet);
 
 // **ERC721 (BCM) コントラクト ABI**
 const bcmAbi = [
@@ -56,6 +59,7 @@ const bcmAbi = [
     "function tokenURI(uint256 tokenId) public view returns (string memory)",
     "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
 ];
+const bcmContract = new ethers.Contract(bcmAddress, bcmAbi, wallet);
 
 // **🛍️ Marketplace コントラクト ABI**
 const marketplaceAbi = [
@@ -74,44 +78,8 @@ const marketplaceAbi = [
     "event GroupBidMatched(address indexed nftContract, uint256 indexed tokenId, uint256 price, address indexed buyer)"
 ];
 
-// ウォレット作成のヘルパー関数
-function createWallet(privateKey) {
-    try {
-        // デフォルトの秘密鍵を使用
-        if (!privateKey) {
-            privateKey = process.env.PRIVATE_KEY;
-        }
-        // 秘密鍵の形式を確認
-        if (!privateKey.startsWith('0x')) {
-            privateKey = `0x${privateKey}`;
-        }
-        return new ethers.Wallet(privateKey, provider);
-    } catch (error) {
-        throw new Error('Invalid private key');
-    }
-}
-
-// デフォルトウォレット
-const defaultWallet = createWallet(process.env.PRIVATE_KEY);
-
-// コントラクトインスタンスの作成関数
-function getContract(address, abi, wallet) {
-    return new ethers.Contract(address, abi, wallet || defaultWallet);
-}
-
-// リクエストからウォレットを取得するミドルウェア
-function getWalletFromRequest(req, res, next) {
-    try {
-        const privateKey = req.headers['x-private-key'];
-        req.wallet = privateKey ? createWallet(privateKey) : defaultWallet;
-        next();
-    } catch (error) {
-        res.status(400).json({ error: 'Invalid private key provided' });
-    }
-}
-
-// ミドルウェアを適用
-app.use(getWalletFromRequest);
+const marketplaceAddress = process.env.MARKETPLACE__CONTRACT_ADDRESS;
+const marketplaceContract = new ethers.Contract(marketplaceAddress, marketplaceAbi, wallet);
 
 // **🟢 ERC20 (USDT) 関連**
 // **1. USDT 残高を取得**
@@ -121,7 +89,6 @@ app.get("/balance/:address", async (req, res) => {
         if (!ethers.utils.isAddress(address)) {
             return res.status(400).json({ error: "Invalid Ethereum address" });
         }
-        const usdtContract = getContract(usdtAddress, usdtAbi, req.wallet);
         const balance = await usdtContract.balanceOf(address);
         const decimals = await usdtContract.decimals();
         const formattedBalance = ethers.utils.formatUnits(balance, decimals);
@@ -135,7 +102,6 @@ app.get("/balance/:address", async (req, res) => {
 app.post("/transfer", async (req, res) => {
     try {
         const { to, amount } = req.body;
-        const usdtContract = getContract(usdtAddress, usdtAbi, req.wallet);
         const decimals = await usdtContract.decimals();
         const tx = await usdtContract.transfer(to, ethers.utils.parseUnits(amount, decimals));
         await tx.wait();
@@ -148,7 +114,6 @@ app.post("/transfer", async (req, res) => {
 // **3. USDT コントラクトのメタデータ取得**
 app.get("/metadata", async (req, res) => {
     try {
-        const usdtContract = getContract(usdtAddress, usdtAbi, req.wallet);
         const name = await usdtContract.name();
         const symbol = await usdtContract.symbol();
         const decimals = await usdtContract.decimals();
@@ -162,7 +127,6 @@ app.get("/metadata", async (req, res) => {
 app.post("/approve", async (req, res) => {
     try {
         const { spender, amount } = req.body;
-        const usdtContract = getContract(usdtAddress, usdtAbi, req.wallet);
         const decimals = await usdtContract.decimals();
         const tx = await usdtContract.approve(spender, ethers.utils.parseUnits(amount, decimals));
         await tx.wait();
@@ -176,7 +140,6 @@ app.post("/approve", async (req, res) => {
 app.get("/allowance/:owner/:spender", async (req, res) => {
     try {
         const { owner, spender } = req.params;
-        const usdtContract = getContract(usdtAddress, usdtAbi, req.wallet);
         const allowance = await usdtContract.allowance(owner, spender);
         const decimals = await usdtContract.decimals();
         res.json({ allowance: ethers.utils.formatUnits(allowance, decimals) });
@@ -189,7 +152,6 @@ app.get("/allowance/:owner/:spender", async (req, res) => {
 app.post("/mint", async (req, res) => {
     try {
         const { to, amount } = req.body;
-        const usdtContract = getContract(usdtAddress, usdtAbi, req.wallet);
         const decimals = await usdtContract.decimals();
         const tx = await usdtContract.mint(to, ethers.utils.parseUnits(amount, decimals));
         await tx.wait();
@@ -203,7 +165,6 @@ app.post("/mint", async (req, res) => {
 app.post("/transferFrom", async (req, res) => {
     try {
         const { from, to, amount } = req.body;
-        const usdtContract = getContract(usdtAddress, usdtAbi, req.wallet);
         const decimals = await usdtContract.decimals();
         const tx = await usdtContract.transferFrom(from, to, ethers.utils.parseUnits(amount, decimals));
         await tx.wait();
@@ -216,7 +177,6 @@ app.post("/transferFrom", async (req, res) => {
 // **8. トークン所有者を取得**
 app.get("/owner", async (req, res) => {
     try {
-        const usdtContract = getContract(usdtAddress, usdtAbi, req.wallet);
         const owner = await usdtContract.owner();
         res.json({ owner });
     } catch (error) {
@@ -227,7 +187,6 @@ app.get("/owner", async (req, res) => {
 // **9. 発行済みトークンの総量を取得**
 app.get("/totalSupply", async (req, res) => {
     try {
-        const usdtContract = getContract(usdtAddress, usdtAbi, req.wallet);
         const totalSupply = await usdtContract.totalSupply();
         const decimals = await usdtContract.decimals();
         res.json({ totalSupply: ethers.utils.formatUnits(totalSupply, decimals) });
@@ -242,8 +201,7 @@ app.get("/totalSupply", async (req, res) => {
 app.post("/gamecoin/deposit", async (req, res) => {
     try {
         const { amount } = req.body;
-        const gameCoinContract = getContract(gameCoinAddress, gameCoinAbi, req.wallet);
-        const decimals = await gameCoinContract.decimals();
+        const decimals = await usdtContract.decimals();
         const parsedAmount = ethers.utils.parseUnits(amount, decimals);
         const receipt = await sendTransaction(
             gameCoinContract,
@@ -260,13 +218,12 @@ app.post("/gamecoin/deposit", async (req, res) => {
 app.post("/gamecoin/withdraw", async (req, res) => {
     try {
         const { to, amount } = req.body;
-        const gameCoinContract = getContract(gameCoinAddress, gameCoinAbi, req.wallet);
         const owner = await gameCoinContract.owner();
-        if (req.wallet.address.toLowerCase() !== owner.toLowerCase()) {
+        if (wallet.address.toLowerCase() !== owner.toLowerCase()) {
             return res.status(403).json({ error: "Only the owner can withdraw" });
         }
 
-        const decimals = await gameCoinContract.decimals();
+        const decimals = await usdtContract.decimals();
         const tx = await gameCoinContract.withdrawUSDT(to, ethers.utils.parseUnits(amount, decimals));
         await tx.wait();
         res.json({ txHash: tx.hash });
@@ -278,7 +235,6 @@ app.post("/gamecoin/withdraw", async (req, res) => {
 // **3. コントラクトの USDT 残高取得**
 app.get("/gamecoin/usdtbalance", async (req, res) => {
     try {
-        const gameCoinContract = getContract(gameCoinAddress, gameCoinAbi, req.wallet);
         const balance = await gameCoinContract.getContractUSDTBalance();
         res.json({ balance: ethers.utils.formatUnits(balance, 18) });
     } catch (error) {
@@ -290,7 +246,6 @@ app.get("/gamecoin/usdtbalance", async (req, res) => {
 app.get("/gamecoin/allowance/:user", async (req, res) => {
     try {
         const { user } = req.params;
-        const gameCoinContract = getContract(gameCoinAddress, gameCoinAbi, req.wallet);
         const allowance = await gameCoinContract.getAllowance(user);
         res.json({ allowance: ethers.utils.formatUnits(allowance, 18) });
     } catch (error) {
@@ -302,7 +257,6 @@ app.get("/gamecoin/allowance/:user", async (req, res) => {
 app.post("/gamecoin/use", async (req, res) => {
     try {
         const { amount } = req.body;
-        const gameCoinContract = getContract(gameCoinAddress, gameCoinAbi, req.wallet);
         const tx = await gameCoinContract.useGameCoin(ethers.utils.parseUnits(amount, 18));
         await tx.wait();
         res.json({ txHash: tx.hash });
@@ -315,7 +269,6 @@ app.post("/gamecoin/use", async (req, res) => {
 app.get("/gamecoin/balance/:user", async (req, res) => {
     try {
         const { user } = req.params;
-        const gameCoinContract = getContract(gameCoinAddress, gameCoinAbi, req.wallet);
         const balance = await gameCoinContract.gameCoinBalance(user);
         res.json({ balance: ethers.utils.formatUnits(balance, 18) });
     } catch (error) {
@@ -329,7 +282,6 @@ app.get("/gamecoin/balance/:user", async (req, res) => {
 app.post("/bcm/mint", async (req, res) => {
     try {
         const { recipient, tokenURI, group } = req.body;
-        const bcmContract = getContract(bcmAddress, bcmAbi, req.wallet);
         const tx = await bcmContract.mintNFTWithGroup(recipient, tokenURI, group);
         const receipt = await tx.wait();
         
@@ -369,7 +321,6 @@ app.post("/bcm/mint", async (req, res) => {
 app.post("/bcm/transfer", async (req, res) => {
     try {
         const { from, to, tokenId } = req.body;
-        const bcmContract = getContract(bcmAddress, bcmAbi, req.wallet);
         const tx = await bcmContract.transferFrom(from, to, tokenId);
         await tx.wait();
         res.json({ message: "NFT Transferred", txHash: tx.hash });
@@ -382,7 +333,6 @@ app.post("/bcm/transfer", async (req, res) => {
 app.post("/bcm/safeTransfer", async (req, res) => {
     try {
         const { from, to, tokenId } = req.body;
-        const bcmContract = getContract(bcmAddress, bcmAbi, req.wallet);
         const tx = await bcmContract.safeTransferFrom(from, to, tokenId);
         await tx.wait();
         res.json({ message: "NFT Safely Transferred", txHash: tx.hash });
@@ -395,7 +345,6 @@ app.post("/bcm/safeTransfer", async (req, res) => {
 app.post("/bcm/approve", async (req, res) => {
     try {
         const { to, tokenId } = req.body;
-        const bcmContract = getContract(bcmAddress, bcmAbi, req.wallet);
         const tx = await bcmContract.approve(to, tokenId);
         await tx.wait();
         res.json({ message: "NFT Approved", txHash: tx.hash });
@@ -408,7 +357,6 @@ app.post("/bcm/approve", async (req, res) => {
 app.post("/bcm/setApprovalForAll", async (req, res) => {
     try {
         const { operator, approved } = req.body;
-        const bcmContract = getContract(bcmAddress, bcmAbi, req.wallet);
         const tx = await bcmContract.setApprovalForAll(operator, approved);
         await tx.wait();
         res.json({ message: "Approval for all set", txHash: tx.hash });
@@ -420,7 +368,6 @@ app.post("/bcm/setApprovalForAll", async (req, res) => {
 // **6. NFT の所有者を取得**
 app.get("/bcm/owner/:tokenId", async (req, res) => {
     try {
-        const bcmContract = getContract(bcmAddress, bcmAbi, req.wallet);
         const owner = await bcmContract.ownerOf(req.params.tokenId);
         res.json({ tokenId: req.params.tokenId, owner });
     } catch (error) {
@@ -431,7 +378,6 @@ app.get("/bcm/owner/:tokenId", async (req, res) => {
 // **7. ウォレットの NFT 保有数を取得**
 app.get("/bcm/balance/:address", async (req, res) => {
     try {
-        const bcmContract = getContract(bcmAddress, bcmAbi, req.wallet);
         const balance = await bcmContract.balanceOf(req.params.address);
         res.json({ address: req.params.address, balance: balance.toString() });
     } catch (error) {
@@ -442,7 +388,6 @@ app.get("/bcm/balance/:address", async (req, res) => {
 // **8. NFT の承認アドレスを取得**
 app.get("/bcm/getApproved/:tokenId", async (req, res) => {
     try {
-        const bcmContract = getContract(bcmAddress, bcmAbi, req.wallet);
         const approved = await bcmContract.getApproved(req.params.tokenId);
         res.json({ tokenId: req.params.tokenId, approved });
     } catch (error) {
@@ -453,7 +398,6 @@ app.get("/bcm/getApproved/:tokenId", async (req, res) => {
 // **9. コントラクトの基本情報を取得**
 app.get("/bcm/metadata", async (req, res) => {
     try {
-        const bcmContract = getContract(bcmAddress, bcmAbi, req.wallet);
         const name = await bcmContract.name();
         const symbol = await bcmContract.symbol();
         res.json({ name, symbol });
@@ -468,7 +412,6 @@ app.get("/bcm/metadata", async (req, res) => {
 app.post("/marketplace/list", async (req, res) => {
     try {
         const { nftContract, tokenId, price, group } = req.body;
-        const marketplaceContract = getContract(process.env.MARKETPLACE__CONTRACT_ADDRESS, marketplaceAbi, req.wallet);
         const tx = await marketplaceContract.listNFT(
             nftContract,
             tokenId,
@@ -490,7 +433,6 @@ app.post("/marketplace/list", async (req, res) => {
 app.post("/marketplace/bid", async (req, res) => {
     try {
         const { group, price } = req.body;
-        const marketplaceContract = getContract(process.env.MARKETPLACE__CONTRACT_ADDRESS, marketplaceAbi, req.wallet);
         const tx = await marketplaceContract.placeGroupBid(
             group,
             ethers.utils.parseUnits(price, 18)
@@ -510,7 +452,6 @@ app.post("/marketplace/bid", async (req, res) => {
 app.post("/marketplace/cancel", async (req, res) => {
     try {
         const { nftContract, tokenId } = req.body;
-        const marketplaceContract = getContract(process.env.MARKETPLACE__CONTRACT_ADDRESS, marketplaceAbi, req.wallet);
         const tx = await marketplaceContract.cancelListing(nftContract, tokenId);
         const receipt = await tx.wait();
         res.json({ 
@@ -527,7 +468,6 @@ app.post("/marketplace/cancel", async (req, res) => {
 app.post("/marketplace/buy", async (req, res) => {
     try {
         const { nftContract, tokenId } = req.body;
-        const marketplaceContract = getContract(process.env.MARKETPLACE__CONTRACT_ADDRESS, marketplaceAbi, req.wallet);
         const tx = await marketplaceContract.buyNFT(nftContract, tokenId);
         const receipt = await tx.wait();
         res.json({ 
@@ -544,7 +484,6 @@ app.post("/marketplace/buy", async (req, res) => {
 app.get("/marketplace/listing/:nftContract/:tokenId", async (req, res) => {
     try {
         const { nftContract, tokenId } = req.params;
-        const marketplaceContract = getContract(process.env.MARKETPLACE__CONTRACT_ADDRESS, marketplaceAbi, req.wallet);
         const listing = await marketplaceContract.getListing(nftContract, tokenId);
         res.json({
             price: ethers.utils.formatUnits(listing.price, 18),
@@ -560,7 +499,6 @@ app.get("/marketplace/listing/:nftContract/:tokenId", async (req, res) => {
 // **6. グループ入札情報を取得**
 app.get("/marketplace/groupbid/:group", async (req, res) => {
     try {
-        const marketplaceContract = getContract(process.env.MARKETPLACE__CONTRACT_ADDRESS, marketplaceAbi, req.wallet);
         const bid = await marketplaceContract.groupBids(req.params.group);
         res.json({
             price: ethers.utils.formatUnits(bid.price, 18),
@@ -575,7 +513,6 @@ app.get("/marketplace/groupbid/:group", async (req, res) => {
 // **7. 出品中のNFT一覧を取得**
 app.get("/marketplace/listed-nfts", async (req, res) => {
     try {
-        const marketplaceContract = getContract(process.env.MARKETPLACE__CONTRACT_ADDRESS, marketplaceAbi, req.wallet);
         const nfts = [];
         let index = 0;
         while (true) {
@@ -608,56 +545,6 @@ async function sendTransaction(contract, method, params) {
         throw error;
     }
 }
-
-// ルートパスのハンドラーを追加
-app.get("/", (req, res) => {
-    res.json({
-        message: "NFT Marketplace API",
-        endpoints: {
-            usdt: {
-                balance: "/balance/:address",
-                transfer: "/transfer",
-                metadata: "/metadata",
-                approve: "/approve",
-                allowance: "/allowance/:owner/:spender",
-                mint: "/mint",
-                owner: "/owner",
-                totalSupply: "/totalSupply"
-            },
-            gamecoin: {
-                deposit: "/gamecoin/deposit",
-                withdraw: "/gamecoin/withdraw",
-                usdtbalance: "/gamecoin/usdtbalance",
-                allowance: "/gamecoin/allowance/:user",
-                use: "/gamecoin/use",
-                balance: "/gamecoin/balance/:user"
-            },
-            bcm: {
-                mint: "/bcm/mint",
-                approve: "/bcm/approve",
-                transfer: "/bcm/transfer",
-                owner: "/bcm/owner/:tokenId",
-                balance: "/bcm/balance/:address",
-                metadata: "/bcm/metadata"
-            },
-            marketplace: {
-                list: "/marketplace/list",
-                bid: "/marketplace/bid",
-                cancel: "/marketplace/cancel",
-                buy: "/marketplace/buy",
-                listing: "/marketplace/listing/:nftContract/:tokenId",
-                groupbid: "/marketplace/groupbid/:group",
-                listedNfts: "/marketplace/listed-nfts"
-            }
-        },
-        contracts: {
-            USDT: process.env.USDT_CONTRACT_ADDRESS,
-            GameCoin: process.env.GAME_COIN_CONTRACT_ADDRESS,
-            BCM: process.env.BCM_CONTRACT_ADDRESS,
-            Marketplace: process.env.MARKETPLACE__CONTRACT_ADDRESS
-        }
-    });
-});
 
 // **サーバー起動**
 const PORT = process.env.PORT || 3000;
