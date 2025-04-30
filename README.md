@@ -1,14 +1,6 @@
 ```markdown:README.md
 # NFT Marketplace API Documentation
 
-## Contract Addresses (Sepolia)
-
-- USDT: `0xAA26ff5dd04368916806d3cBf985fF41e023BF48`
-- USDC: `0x0ad45ab5f6081628b4790f4c4e5e08a7a98defec`
-- GameCoin: `0x359394D70Ca0565C9F5e85D9182ae62D4bcfE745`
-- BCM: `0x53B5F1de7f658aC9D466fDfF875d7353A0399bB5`
-- Marketplace: `0x1B8fC7DF8d0D97A25258a851dF95BAC20742C84c`
-
 ## Setup
 ```bash
 npm install

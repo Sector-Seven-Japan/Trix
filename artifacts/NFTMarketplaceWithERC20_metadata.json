@@ -33,43 +33,12 @@
 					},
 					{
 						"indexed": false,
-						"internalType": "uint256",
-						"name": "price",
-						"type": "uint256"
-					},
-					{
-						"indexed": true,
-						"internalType": "address",
-						"name": "buyer",
-						"type": "address"
-					}
-				],
-				"name": "GroupBidMatched",
-				"type": "event"
-			},
-			{
-				"anonymous": false,
-				"inputs": [
-					{
-						"indexed": true,
 						"internalType": "string",
-						"name": "group",
+						"name": "reason",
 						"type": "string"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "price",
-						"type": "uint256"
-					},
-					{
-						"indexed": true,
-						"internalType": "address",
-						"name": "buyer",
-						"type": "address"
 					}
 				],
-				"name": "GroupBidPlaced",
+				"name": "ListingFailed",
 				"type": "event"
 			},
 			{
@@ -101,9 +70,9 @@
 					},
 					{
 						"indexed": false,
-						"internalType": "string",
+						"internalType": "uint16",
 						"name": "group",
-						"type": "string"
+						"type": "uint16"
 					}
 				],
 				"name": "NFTListed",
@@ -166,6 +135,60 @@
 				"type": "event"
 			},
 			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "nftContract",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "tokenId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "reason",
+						"type": "string"
+					}
+				],
+				"name": "PurchaseFailed",
+				"type": "event"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint16",
+						"name": "group",
+						"type": "uint16"
+					},
+					{
+						"internalType": "address",
+						"name": "nftContract",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxTotal",
+						"type": "uint256"
+					}
+				],
+				"name": "buyGroup",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "purchased",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
 				"inputs": [
 					{
 						"internalType": "address",
@@ -179,7 +202,13 @@
 					}
 				],
 				"name": "buyNFT",
-				"outputs": [],
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "success",
+						"type": "bool"
+					}
+				],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			},
@@ -204,107 +233,184 @@
 			{
 				"inputs": [
 					{
-						"internalType": "address",
-						"name": "nftContract",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "tokenId",
-						"type": "uint256"
-					}
-				],
-				"name": "getListing",
-				"outputs": [
-					{
-						"components": [
-							{
-								"internalType": "uint256",
-								"name": "price",
-								"type": "uint256"
-							},
-							{
-								"internalType": "address",
-								"name": "seller",
-								"type": "address"
-							},
-							{
-								"internalType": "string",
-								"name": "group",
-								"type": "string"
-							}
-						],
-						"internalType": "struct NFTMarketplaceWithERC20.Listing",
-						"name": "",
-						"type": "tuple"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "string",
-						"name": "",
-						"type": "string"
-					}
-				],
-				"name": "groupBids",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "price",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "buyer",
-						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "address",
-						"name": "nftContract",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "tokenId",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "price",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
+						"internalType": "uint16",
 						"name": "group",
-						"type": "string"
+						"type": "uint16"
+					},
+					{
+						"internalType": "address",
+						"name": "nftContract",
+						"type": "address"
 					}
 				],
-				"name": "listNFT",
-				"outputs": [],
+				"name": "getAllGroupTokenIds",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint16",
+						"name": "group",
+						"type": "uint16"
+					},
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					}
+				],
+				"name": "getGroupContract",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint16",
+						"name": "group",
+						"type": "uint16"
+					}
+				],
+				"name": "getGroupPrice",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint16",
+						"name": "group",
+						"type": "uint16"
+					},
+					{
+						"internalType": "address",
+						"name": "nftContract",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					}
+				],
+				"name": "getGroupTokenId",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint16",
+						"name": "",
+						"type": "uint16"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "groupContracts",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint16",
+						"name": "",
+						"type": "uint16"
+					},
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "groupTokenIds",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "nftContract",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "tokenIds",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "uint16",
+						"name": "group",
+						"type": "uint16"
+					}
+				],
+				"name": "listMany",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "listed",
+						"type": "uint256[]"
+					}
+				],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
 				"inputs": [
 					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "listedNFTs",
-				"outputs": [
-					{
 						"internalType": "address",
 						"name": "nftContract",
 						"type": "address"
@@ -313,9 +419,22 @@
 						"internalType": "uint256",
 						"name": "tokenId",
 						"type": "uint256"
+					},
+					{
+						"internalType": "uint16",
+						"name": "group",
+						"type": "uint16"
 					}
 				],
-				"stateMutability": "view",
+				"name": "listNFT",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "success",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
@@ -334,19 +453,9 @@
 				"name": "listings",
 				"outputs": [
 					{
-						"internalType": "uint256",
-						"name": "price",
-						"type": "uint256"
-					},
-					{
 						"internalType": "address",
-						"name": "seller",
+						"name": "",
 						"type": "address"
-					},
-					{
-						"internalType": "string",
-						"name": "group",
-						"type": "string"
 					}
 				],
 				"stateMutability": "view",
@@ -364,24 +473,6 @@
 				],
 				"stateMutability": "view",
 				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "string",
-						"name": "group",
-						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "price",
-						"type": "uint256"
-					}
-				],
-				"name": "placeGroupBid",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
 			}
 		],
 		"devdoc": {
@@ -397,7 +488,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"S7/mp.sol": "NFTMarketplaceWithERC20"
+			"BCMMarket4.sol": "NFTMarketplaceWithERC20"
 		},
 		"evmVersion": "cancun",
 		"libraries": {},
@@ -443,12 +534,12 @@
 				"dweb:/ipfs/QmfDRc7pxfaXB2Dh9np5Uf29Na3pQ7tafRS684wd3GLjVL"
 			]
 		},
-		"S7/mp.sol": {
-			"keccak256": "0x07b2cf66f58de13dcde74b79df85a9f3faa8a74f08295e2c2ef032e2067b2819",
+		"BCMMarket4.sol": {
+			"keccak256": "0xabf4f0ef8627d28134066b4f6a4faafe91931125fee14362fa857a6444562c86",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://aee325a001d070f03170f04d762fd55acf92b8ddd9c5308e805837bd2e92358d",
-				"dweb:/ipfs/QmSbtFGyAgZyoWrZdvRQLT44z51CjMWt1ibdfgyGsx8WS7"
+				"bzz-raw://30a240a4e17e99ad37b4bfedb651b6f29c4c43a222ffb3fd6ba007bb53b77cf5",
+				"dweb:/ipfs/QmVpfHCPv4AuHmARuVoQsM8NcTakp9omiE73UChg7AdU89"
 			]
 		}
 	},

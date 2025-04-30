@@ -453,7 +453,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"S7/testUSDT.sol": "TestUSDT"
+			"testUSDT.sol": "TestUSDT"
 		},
 		"evmVersion": "cancun",
 		"libraries": {},
@@ -476,11 +476,11 @@
 			]
 		},
 		"@openzeppelin/contracts/token/ERC20/ERC20.sol": {
-			"keccak256": "0xbf61ab2ae1d575a17ea58fbb99ca232baddcc4e0eeea180e84cbc74b0c348b31",
+			"keccak256": "0x41f6b3b9e030561e7896dbef372b499cc8d418a80c3884a4d65a68f2fdc7493a",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://4e0968705bad99747a8e5288aa008678c2be2f471f919dce3925a3cc4f1dee09",
-				"dweb:/ipfs/QmbAFnCQfo4tw6ssfQSjhA5LzwHWNNryXN8bX7ty8jiqqn"
+				"bzz-raw://80b0992a11b2fd1f75ced2971696d07bbd1d19ce6761dd50d8b6d48aa435f42a",
+				"dweb:/ipfs/QmZDe5xd2gXHjVEjv9t8C1KQ68K5T8qFwdinwQgmP3rF3x"
 			]
 		},
 		"@openzeppelin/contracts/token/ERC20/IERC20.sol": {
@@ -507,7 +507,7 @@
 				"dweb:/ipfs/Qmax9WHBnVsZP46ZxEMNRQpLQnrdE4dK8LehML1Py8FowF"
 			]
 		},
-		"S7/testUSDT.sol": {
+		"testUSDT.sol": {
 			"keccak256": "0x1746671295cdf27fcbce5302527b2e1c34f3a25fd0e9461ba734279bcf5f9b50",
 			"license": "MIT",
 			"urls": [

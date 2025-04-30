@@ -227,7 +227,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"S7/GameCoin.sol": "GameCoinContract"
+			"GameCoin.sol": "GameCoinContract"
 		},
 		"evmVersion": "cancun",
 		"libraries": {},
@@ -241,7 +241,7 @@
 		"remappings": []
 	},
 	"sources": {
-		"S7/GameCoin.sol": {
+		"GameCoin.sol": {
 			"keccak256": "0x5d3623add3454a620b4ee54798135d95a066f7ef3114c4803e6e1d90ed156427",
 			"license": "MIT",
 			"urls": [
